@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FocusFlow – Pomodoro + To‑Do</title>
+  <meta name="description" content="A super‑simple Pomodoro + To‑Do app that saves to your device. Perfect as a quick working product submission." />
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --card:#111827ee; /* gray-900 */
+      --muted:#94a3b8; /* slate-400 */
+      --text:#e5e7eb; /* gray-200 */
+      --brand:#22c55e; /* green-500 */
+      --brand-2:#60a5fa; /* blue-400 */
+      --danger:#ef4444;
+      --shadow:0 20px 40px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+      background: radial-gradient(1200px 1200px at 10% 10%, #1f2937 0%, var(--bg) 40%, #0b1225 100%);
+      color:var(--text);
+      display:grid; place-items:center; padding:24px;
+    }
+    .app{
+      width:min(950px, 95vw);
+      display:grid; gap:16px;
+      grid-template-columns: 1.2fr .8fr;
+    }
+    @media (max-width:900px){ .app{grid-template-columns:1fr;}}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(6px);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+    }
+    header{
+      grid-column:1/-1;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+    }
+    .logo{
+      display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px;
+    }
+    .logo .dot{width:10px;height:10px;border-radius:50%;background:var(--brand); box-shadow:0 0 16px var(--brand)}
+    .badges{display:flex; gap:8px; flex-wrap:wrap}
+    .badge{padding:6px 10px;border-radius:999px; border:1px solid rgba(255,255,255,.12); color:var(--muted); font-size:12px}
+
+    /* Timer */
+    .timer{
+      display:grid; gap:14px; place-items:center; text-align:center; padding:24px;
+    }
+    .time{
+      font-size:64px; font-weight:900; letter-spacing:2px; line-height:1; 
+    }
+    .mode-switch{display:flex; gap:8px; flex-wrap:wrap; justify-content:center}
+    .mode-switch button{
+      background:#0b1225; color:var(--text); border:1px solid rgba(255,255,255,.12);
+      padding:10px 12px; border-radius:999px; cursor:pointer; font-weight:600;
+    }
+    .mode-switch button.active{border-color:transparent; background:linear-gradient(90deg,var(--brand),var(--brand-2)); color:#0b1225}
+    .actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+    .btn{
+      padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:#0b1225; color:var(--text);
+      cursor:pointer; font-weight:700; min-width:110px;
+    }
+    .btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand-2)); color:#0b1225; border:none}
+    .btn.danger{border-color:transparent; background:linear-gradient(90deg,#f43f5e,#ef4444); color:#0b1225}
+
+    /* Todo */
+    .todo{display:grid; gap:12px}
+    .row{display:flex; gap:10px}
+    input[type="text"], input[type="number"]{
+      width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.12);
+      background:#0b1225; color:var(--text)
+    }
+    .list{display:grid; gap:8px; max-height:360px; overflow:auto; padding-right:4px}
+    .task{
+      display:flex; align-items:center; gap:10px; padding:10px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08)
+    }
+    .task.done{opacity:.6; text-decoration:line-through}
+    .task button{margin-left:auto}
+
+    /* Stats */
+    .stats{
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    }
+    .stat{ padding:14px; border-radius:14px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); text-align:center}
+    .stat .num{font-size:28px; font-weight:900}
+
+    footer{grid-column:1/-1; text-align:center; color:var(--muted); font-size:12px}
+    a{color:var(--brand-2)} a:hover{text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="card">
+      <div class="logo"><span class="dot"></span> FocusFlow <span style="color:var(--muted);font-weight:600">· working product</span></div>
+      <div class="badges">
+        <span class="badge">No sign‑up</span>
+        <span class="badge">Saves locally</span>
+        <span class="badge">Mobile friendly</span>
+      </div>
+    </header>
+
+    <section class="card timer" aria-label="Pomodoro timer">
+      <div class="mode-switch" role="tablist" aria-label="Timer modes">
+        <button class="tab active" data-mins="25" aria-selected="true">Focus 25</button>
+        <button class="tab" data-mins="5">Break 5</button>
+        <button class="tab" data-mins="15">Break 15</button>
+      </div>
+      <div class="time" id="time" aria-live="polite">25:00</div>
+      <div class="actions">
+        <button class="btn primary" id="start">Start</button>
+        <button class="btn" id="pause">Pause</button>
+        <button class="btn danger" id="reset">Reset</button>
+      </div>
+    </section>
+
+    <section class="card todo" aria-label="Tasks">
+      <h2 style="margin:0 0 6px 0">Tasks</h2>
+      <div class="row">
+        <input id="taskInput" type="text" placeholder="Add a task and press +" />
+        <button id="addTask" class="btn primary" aria-label="Add task">+</button>
+      </div>
+      <div class="list" id="taskList" aria-live="polite"></div>
+      <div class="stats" aria-label="Stats">
+        <div class="stat"><div class="num" id="statTasks">0</div><div>Tasks</div></div>
+        <div class="stat"><div class="num" id="statDone">0</div><div>Done</div></div>
+        <div class="stat"><div class="num" id="statPomos">0</div><div>Focus Sessions</div></div>
+      </div>
+    </section>
+
+    <footer>
+      Built with vanilla HTML/CSS/JS · Data stays on your device (localStorage).<br/>
+      Tip: Deploy this file to GitHub Pages / Netlify and share the link.
+    </footer>
+  </div>
+
+  <audio id="ding" preload="auto">
+    <source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAA..." type="audio/mpeg">
+  </audio>
+
+  <script>
+  // --- Simple State ---
+  const $ = (q, root=document) => root.querySelector(q);
+  const $$ = (q, root=document) => [...root.querySelectorAll(q)];
+  const S = {
+    tasks: JSON.parse(localStorage.getItem('ff_tasks')||'[]'),
+    done:  JSON.parse(localStorage.getItem('ff_done')||'[]'),
+    pomos: +localStorage.getItem('ff_pomos')||0,
+    secs: 25*60,
+    running:false,
+    timer:null,
+  };
+
+  const timeEl = $('#time');
+  const startBtn = $('#start');
+  const pauseBtn = $('#pause');
+  const resetBtn = $('#reset');
+  const tabs = $$('.tab');
+  const list = $('#taskList');
+  const ding = $('#ding');
+
+  // --- Timer helpers ---
+  function fmt(n){ return String(Math.floor(n/60)).padStart(2,'0') + ':' + String(n%60).padStart(2,'0'); }
+  function setSecs(s){ S.secs=s; timeEl.textContent=fmt(S.secs); }
+  function tick(){
+    if(!S.running) return;
+    if(S.secs>0){ setSecs(S.secs-1); }
+    else {
+      S.running=false; clearInterval(S.timer); S.timer=null; setSecs(0);
+      try{ ding.currentTime=0; ding.play(); }catch{ /* ignore */ }
+      S.pomos++; localStorage.setItem('ff_pomos', S.pomos);
+      $('#statPomos').textContent = S.pomos;
+      alert('Time\'s up! Nice work. Take a short break.');
+    }
+  }
+
+  startBtn.onclick = ()=>{ if(!S.running){ S.running=true; S.timer=setInterval(tick,1000); } };
+  pauseBtn.onclick = ()=>{ S.running=false; clearInterval(S.timer); S.timer=null; };
+  resetBtn.onclick = ()=>{ S.running=false; clearInterval(S.timer); S.timer=null; setSecs(+$('.tab.active').dataset.mins*60); };
+  tabs.forEach(b=> b.onclick = ()=>{ tabs.forEach(x=>x.classList.remove('active')); b.classList.add('active'); setSecs(+b.dataset.mins*60); });
+
+  // --- Tasks ---
+  function save(){ localStorage.setItem('ff_tasks', JSON.stringify(S.tasks)); localStorage.setItem('ff_done', JSON.stringify(S.done)); stats(); }
+  function stats(){
+    $('#statTasks').textContent = S.tasks.length;
+    $('#statDone').textContent = S.done.length;
+    $('#statPomos').textContent = S.pomos;
+  }
+  function render(){
+    list.innerHTML='';
+    const all = [...S.tasks.map(t=>({...t, done:false})), ...S.done.map(t=>({...t, done:true}))];
+    if(!all.length){ list.innerHTML = `<div class="badge" style="margin:auto">No tasks yet. Add one!</div>`; stats(); return; }
+    all.forEach((t,i)=>{
+      const el = document.createElement('div'); el.className = 'task'+(t.done?' done':'');
+      el.innerHTML = `
+        <input type="checkbox" ${t.done?'checked':''} aria-label="mark done"/>
+        <div contenteditable="true" aria-label="task text" style="outline:none;flex:1;">${t.txt.replace(/</g,'&lt;')}</div>
+        <button class="btn" aria-label="delete">✕</button>`;
+      const [cb, txt, del] = el.children;
+      cb.onchange = ()=>{
+        if(cb.checked){
+          // move to done
+          const idx = S.tasks.findIndex(x=>x.id===t.id);
+          if(idx>-1){ S.done.unshift(S.tasks.splice(idx,1)[0]); }
+        } else {
+          // move back to tasks
+          const idx = S.done.findIndex(x=>x.id===t.id);
+          if(idx>-1){ S.tasks.unshift(S.done.splice(idx,1)[0]); }
+        }
+        save(); render();
+      };
+      txt.oninput = ()=>{
+        const target = (t.done? S.done : S.tasks).find(x=>x.id===t.id);
+        if(target) target.txt = txt.textContent.trim();
+        save();
+      };
+      del.onclick = ()=>{
+        S.tasks = S.tasks.filter(x=>x.id!==t.id);
+        S.done = S.done.filter(x=>x.id!==t.id);
+        save(); render();
+      };
+      list.appendChild(el);
+    });
+    stats();
+  }
+
+  $('#addTask').onclick = ()=>{
+    const input = $('#taskInput');
+    const val = input.value.trim();
+    if(!val) return input.focus();
+    S.tasks.unshift({ id: crypto.randomUUID(), txt: val });
+    input.value=''; save(); render();
+  };
+  $('#taskInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#addTask').click(); }});
+
+  // --- Init ---
+  setSecs(25*60);
+  stats();
+  render();
+  </script>
+</body>
+</html>
